@@ -1,0 +1,39 @@
+<%- include('../partials/header') %>
+<div class="page-head">
+  <div><h1>Payroll</h1><div class="muted">Process → review → roll back if needed → post. Posting is final.</div></div>
+  <% if (can('periods.manage')) { %><div class="actions"><a class="btn btn-secondary" href="/settings/periods">Open a new period</a></div><% } %>
+</div>
+
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Period</th><th>Status</th><th class="num">Employees</th><th class="num">Gross pay</th><th class="num">PAYE</th><th class="num">Net pay</th><th>Last action</th><th></th></tr></thead>
+    <tbody>
+      <% for (const p of periods) { %>
+        <tr>
+          <td><a href="/payroll/<%= p.id %>"><strong><%= periodName(p) %></strong></a></td>
+          <td><span class="badge badge-<%= p.status %>"><%= p.status %></span></td>
+          <td class="num"><%= p.employees || '—' %></td>
+          <td class="num"><%= p.employees ? money(p.gross_pay) : '—' %></td>
+          <td class="num"><%= p.employees ? money(p.paye) : '—' %></td>
+          <td class="num"><%= p.employees ? money(p.net_pay) : '—' %></td>
+          <td class="muted small">
+            <% if (p.posted_at) { %>Posted <%= p.posted_at %> by <%= p.posted_by %>
+            <% } else if (p.processed_at) { %>Processed <%= p.processed_at %> by <%= p.processed_by %>
+            <% } else { %>—<% } %>
+          </td>
+          <td class="right">
+            <% if (p.id === nextActionableId && p.status === 'OPEN' && can('payroll.process')) { %>
+              <form class="inline" method="post" action="/payroll/<%= p.id %>/process"><button class="btn-sm">Process</button></form>
+            <% } else { %>
+              <a class="btn btn-sm btn-secondary" href="/payroll/<%= p.id %>">Open</a>
+            <% } %>
+          </td>
+        </tr>
+      <% } %>
+      <% if (periods.length === 0) { %>
+        <tr><td colspan="8" class="muted">No payroll periods yet.<% if (can('periods.manage')) { %> <a href="/settings/periods">Open the first period</a>.<% } %></td></tr>
+      <% } %>
+    </tbody>
+  </table>
+</div>
+<%- include('../partials/footer') %>

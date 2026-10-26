@@ -1,0 +1,11 @@
+<%- include('../partials/header') %>
+<div class="page-head"><h1>Edit <%= label.toLowerCase() %>: <%= item.code %></h1></div>
+<form class="card" method="post" action="<%= base %>/<%= item.id %>">
+  <%- include('_fields') %>
+  <p class="muted small">Changing the default does not change values already assigned to employees. Changes apply the next time payroll is processed.</p>
+  <div class="actions">
+    <button>Save</button>
+    <a class="btn btn-secondary" href="<%= base %>">Cancel</a>
+  </div>
+</form>
+<%- include('../partials/footer') %>

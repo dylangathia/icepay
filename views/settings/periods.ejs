@@ -1,0 +1,35 @@
+<%- include('../partials/header') %>
+<form class="card inline-form" method="post" action="/settings/periods">
+  <div class="field"><label>Month</label>
+    <select name="month">
+      <% MONTHS.forEach((m, i) => { %><option value="<%= i + 1 %>" <%= next.month === i + 1 ? 'selected' : '' %>><%= m %></option><% }) %>
+    </select>
+  </div>
+  <div class="field"><label>Year</label><input type="number" name="year" value="<%= next.year %>" style="width:110px"></div>
+  <button>Open period</button>
+</form>
+
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Period</th><th>Status</th><th>Processed</th><th>Posted</th><th></th></tr></thead>
+    <tbody>
+      <% for (const p of periods) { %>
+        <tr>
+          <td><a href="/payroll/<%= p.id %>"><%= periodName(p) %></a></td>
+          <td><span class="badge badge-<%= p.status %>"><%= p.status %></span></td>
+          <td class="muted small"><%= p.processed_at ? `${p.processed_at} by ${p.processed_by}` : '—' %></td>
+          <td class="muted small"><%= p.posted_at ? `${p.posted_at} by ${p.posted_by}` : '—' %></td>
+          <td class="right">
+            <% if (p.status === 'OPEN') { %>
+              <form class="inline" method="post" action="/settings/periods/<%= p.id %>/delete" data-confirm="Delete <%= periodName(p) %>?">
+                <button class="btn-sm btn-danger">Delete</button>
+              </form>
+            <% } %>
+          </td>
+        </tr>
+      <% } %>
+      <% if (periods.length === 0) { %><tr><td colspan="5" class="muted">No periods yet.</td></tr><% } %>
+    </tbody>
+  </table>
+</div>
+<%- include('../partials/footer') %>

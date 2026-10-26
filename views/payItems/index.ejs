@@ -1,0 +1,62 @@
+<%- include('../partials/header') %>
+<div class="page-head">
+  <div>
+    <h1><%= plural %></h1>
+    <div class="muted">
+      <% if (kind === 'BENEFIT') { %>
+        Earnings paid on top of basic salary. Percentage benefits are calculated on basic salary.
+      <% } else { %>
+        Non-statutory deductions. PAYE, NSSF, SHIF and Housing Levy are calculated automatically from Settings.
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Code</th><th>Name</th><th>Calculation</th><th class="num">Default</th><th>Tax treatment</th><th>Status</th><th class="num">Employees</th><th></th></tr></thead>
+    <tbody>
+      <% for (const i of items) { %>
+        <tr>
+          <td><strong><%= i.code %></strong></td>
+          <td><%= i.name %></td>
+          <td><%= i.calc_type === 'PERCENT' ? '% of basic' : 'Fixed' %></td>
+          <td class="num"><%= i.calc_type === 'PERCENT' ? `${i.default_value}%` : money(i.default_value) %></td>
+          <td>
+            <% if (kind === 'BENEFIT') { %><%= i.taxable ? 'Taxable' : 'Tax exempt' %>
+            <% } else { %><%= i.taxable ? 'After tax' : 'Tax exempt (pre-tax)' %><%= i.insurance_relief ? ' · insurance relief' : '' %><% } %>
+          </td>
+          <td><span class="badge <%= i.active ? 'badge-ACTIVE' : 'badge-muted' %>"><%= i.active ? 'ACTIVE' : 'INACTIVE' %></span></td>
+          <td class="num"><%= i.assigned %></td>
+          <td class="right">
+            <% if (can('payitems.manage')) { %>
+            <div class="actions" style="justify-content:flex-end">
+              <a class="btn btn-sm btn-secondary" href="<%= base %>/<%= i.id %>/edit">Edit</a>
+              <% if (i.active) { %>
+                <form class="inline" method="post" action="<%= base %>/<%= i.id %>/assign-all" data-confirm="Assign <%= i.name %> at its default value to all active employees who don't have it?">
+                  <button class="btn-sm btn-secondary">Assign to all</button>
+                </form>
+              <% } %>
+              <% if (i.assigned === 0) { %>
+                <form class="inline" method="post" action="<%= base %>/<%= i.id %>/delete" data-confirm="Delete <%= i.name %>?">
+                  <button class="btn-sm btn-danger">Delete</button>
+                </form>
+              <% } %>
+            </div>
+            <% } %>
+          </td>
+        </tr>
+      <% } %>
+      <% if (items.length === 0) { %><tr><td colspan="8" class="muted">No <%= plural.toLowerCase() %> defined yet.</td></tr><% } %>
+    </tbody>
+  </table>
+</div>
+
+<% if (can('payitems.manage')) { %>
+<form class="card" method="post" action="<%= base %>">
+  <h2>New <%= label.toLowerCase() %></h2>
+  <%- include('_fields') %>
+  <button>Create <%= label.toLowerCase() %></button>
+</form>
+<% } %>
+<%- include('../partials/footer') %>

@@ -1,0 +1,133 @@
+<%- include('../partials/header') %>
+<% const t = totals; const has = payslips.length > 0; %>
+<div class="page-head">
+  <div>
+    <h1>Payroll: <%= periodName(period) %> <span class="badge badge-<%= period.status %>"><%= period.status %></span></h1>
+    <div class="muted">
+      <% if (period.status === 'POSTED') { %>Processed <%= period.processed_at %> by <%= period.processed_by %> · Posted <%= period.posted_at %> by <%= period.posted_by %>
+      <% } else if (period.status === 'PROCESSED') { %>Processed <%= period.processed_at %> by <%= period.processed_by %>
+      <% } else { %>Not yet processed<% } %>
+    </div>
+  </div>
+  <div class="actions">
+    <% if (period.status === 'OPEN' && can('payroll.process')) { %>
+      <form class="inline" method="post" action="/payroll/<%= period.id %>/process"><button>Process payroll</button></form>
+    <% } %>
+    <% if (period.status === 'PROCESSED' && can('payroll.process')) { %>
+      <form class="inline" method="post" action="/payroll/<%= period.id %>/rollback"
+            data-confirm="Roll back <%= periodName(period) %>? All payslips for this period will be deleted and the period reopened.">
+        <button class="btn-warning">Roll back</button>
+      </form>
+    <% } %>
+    <% if (period.status === 'POSTED' && can('payroll.email')) { %>
+      <form class="inline" method="post" action="/payroll/<%= period.id %>/email" data-confirm="Email payslips to all employees in this period?">
+        <button class="btn-secondary">Email payslips</button>
+      </form>
+    <% } %>
+    <% if (has) { %><a class="btn btn-secondary" href="/payroll/<%= period.id %>/export.csv">Export CSV</a><% } %>
+  </div>
+</div>
+
+<% if (period.status === 'OPEN') { %>
+  <div class="notice">
+    Processing calculates payslips for all <strong>active</strong> employees hired on or before the end of the month,
+    plus a final payslip for anyone whose last working day falls in this month,
+    using current salaries, benefits, deductions and statutory rates. Joiners and leavers are prorated by calendar days.
+    You can roll back and reprocess until you post.
+  </div>
+<% } %>
+<% if (period.status === 'POSTED') { %>
+  <div class="flash flash-success">This payroll is posted and locked. It cannot be rolled back or changed.</div>
+<% } %>
+
+<% if (has) { %>
+  <div class="grid grid-4" style="margin-bottom:20px">
+    <div class="stat"><div class="label">Employees</div><div class="value"><%= t.employees %></div></div>
+    <div class="stat"><div class="label">Gross pay</div><div class="value"><%= money(t.gross_pay) %></div></div>
+    <div class="stat"><div class="label">Total deductions</div><div class="value"><%= money(t.total_deductions) %></div></div>
+    <div class="stat"><div class="label">Net pay</div><div class="value"><%= money(t.net_pay) %></div></div>
+  </div>
+
+  <div class="card">
+    <h2>Statutory remittances</h2>
+    <div class="table-wrap" style="margin:0">
+      <table>
+        <thead><tr><th>Remittance</th><th class="num">Employee</th><th class="num">Employer</th><th class="num">Total</th></tr></thead>
+        <tbody>
+          <tr><td>PAYE (KRA)</td><td class="num"><%= money(t.paye) %></td><td class="num">—</td><td class="num"><%= money(t.paye) %></td></tr>
+          <tr><td>NSSF</td><td class="num"><%= money(t.nssf) %></td><td class="num"><%= money(t.employer_nssf) %></td><td class="num"><%= money(t.nssf + t.employer_nssf) %></td></tr>
+          <tr><td>SHIF (SHA)</td><td class="num"><%= money(t.shif) %></td><td class="num">—</td><td class="num"><%= money(t.shif) %></td></tr>
+          <tr><td>Affordable Housing Levy (KRA)</td><td class="num"><%= money(t.housing_levy) %></td><td class="num"><%= money(t.employer_housing_levy) %></td><td class="num"><%= money(t.housing_levy + t.employer_housing_levy) %></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <h2>Payroll register</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>No.</th><th>Name</th><th class="num">Days</th><th class="num">Basic</th><th class="num">Benefits</th><th class="num">Gross</th>
+          <th class="num">NSSF</th><th class="num">SHIF</th><th class="num">AHL</th><th class="num">Taxable</th>
+          <th class="num">PAYE</th><th class="num">Other ded.</th><th class="num">Net pay</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% for (const s of payslips) { %>
+          <tr>
+            <td><%= s.emp_no %></td>
+            <td><%= s.employee_name %></td>
+            <td class="num">
+              <% if (s.days_worked != null && s.days_worked < s.days_in_period) { %>
+                <span class="badge badge-PROCESSED" title="Prorated"><%= s.days_worked %>/<%= s.days_in_period %></span>
+              <% } else { %><%= s.days_in_period ?? '' %><% } %>
+            </td>
+            <td class="num"><%= money(s.basic_salary) %></td>
+            <td class="num"><%= money(s.total_benefits) %></td>
+            <td class="num"><%= money(s.gross_pay) %></td>
+            <td class="num"><%= money(s.nssf) %></td>
+            <td class="num"><%= money(s.shif) %></td>
+            <td class="num"><%= money(s.housing_levy) %></td>
+            <td class="num"><%= money(s.taxable_pay) %></td>
+            <td class="num"><%= money(s.paye) %></td>
+            <td class="num"><%= money(s.exempt_deductions + s.other_deductions) %></td>
+            <td class="num"><strong><%= money(s.net_pay) %></strong></td>
+            <td><a href="/payroll/<%= period.id %>/payslips/<%= s.id %>" target="_blank">Payslip</a></td>
+          </tr>
+        <% } %>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="5">Totals</td>
+          <td class="num"><%= money(t.gross_pay) %></td>
+          <td class="num"><%= money(t.nssf) %></td>
+          <td class="num"><%= money(t.shif) %></td>
+          <td class="num"><%= money(t.housing_levy) %></td>
+          <td></td>
+          <td class="num"><%= money(t.paye) %></td>
+          <td></td>
+          <td class="num"><%= money(t.net_pay) %></td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+<% } %>
+
+<% if (period.status === 'PROCESSED' && !can('payroll.post')) { %>
+  <div class="notice">Waiting for an approver to review and post this payroll.</div>
+<% } else if (period.status === 'PROCESSED' && fourEyes && period.processed_by === user.username) { %>
+  <div class="notice">You processed this payroll. Another user with posting rights must review and post it.</div>
+<% } else if (period.status === 'PROCESSED') { %>
+  <form class="card" method="post" action="/payroll/<%= period.id %>/post" style="border-color:var(--danger)"
+        data-confirm="Post <%= periodName(period) %>? This is IRREVERSIBLE.">
+    <h2>Post payroll</h2>
+    <p>Posting locks <%= periodName(period) %> permanently. It can no longer be rolled back or reprocessed, and the next period can then be processed.</p>
+    <div class="inline-form">
+      <div class="field"><label>Type POST to confirm</label><input name="confirm" autocomplete="off" required pattern="POST" style="width:160px"></div>
+      <button class="btn-danger">Post payroll</button>
+    </div>
+  </form>
+<% } %>
+<%- include('../partials/footer') %>

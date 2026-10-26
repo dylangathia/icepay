@@ -1,0 +1,33 @@
+<%- include('../partials/header') %>
+<form class="card inline-form" method="post" action="/settings/designations">
+  <div class="field"><label>New designation</label><input name="name" required placeholder="e.g. Accountant"></div>
+  <button>Add designation</button>
+</form>
+
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Designation</th><th class="num">Employees</th><th></th></tr></thead>
+    <tbody>
+      <% for (const d of designations) { %>
+        <tr>
+          <td>
+            <form class="inline-form" method="post" action="/settings/designations/<%= d.id %>">
+              <div class="field"><input name="name" value="<%= d.name %>" required></div>
+              <button class="btn-sm btn-secondary">Rename</button>
+            </form>
+          </td>
+          <td class="num"><%= d.employees %></td>
+          <td class="right">
+            <% if (d.employees === 0) { %>
+              <form class="inline" method="post" action="/settings/designations/<%= d.id %>/delete" data-confirm="Delete <%= d.name %>?">
+                <button class="btn-sm btn-danger">Delete</button>
+              </form>
+            <% } %>
+          </td>
+        </tr>
+      <% } %>
+      <% if (designations.length === 0) { %><tr><td colspan="3" class="muted">No designations yet.</td></tr><% } %>
+    </tbody>
+  </table>
+</div>
+<%- include('../partials/footer') %>

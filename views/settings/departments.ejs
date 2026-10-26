@@ -1,0 +1,44 @@
+<%- include('../partials/header') %>
+<form class="card inline-form" method="post" action="/settings/departments">
+  <div class="field"><label>New department</label><input name="name" required></div>
+  <button>Add department</button>
+</form>
+
+<% for (const d of departments) { %>
+  <div class="card">
+    <div class="page-head" style="margin-bottom:12px">
+      <form class="inline-form" method="post" action="/settings/departments/<%= d.id %>">
+        <div class="field"><input name="name" value="<%= d.name %>" required style="font-weight:600"></div>
+        <button class="btn-sm btn-secondary">Rename</button>
+        <span class="muted small"><%= d.employees %> employee(s)</span>
+      </form>
+      <% if (d.employees === 0 && d.subs.length === 0) { %>
+        <form class="inline" method="post" action="/settings/departments/<%= d.id %>/delete" data-confirm="Delete <%= d.name %>?">
+          <button class="btn-sm btn-danger">Delete</button>
+        </form>
+      <% } %>
+    </div>
+    <div style="padding-left:16px">
+      <% for (const s of d.subs) { %>
+        <div class="inline-form" style="margin-bottom:6px">
+          <form class="inline-form" method="post" action="/settings/sub-departments/<%= s.id %>">
+            <div class="field"><input name="name" value="<%= s.name %>" required></div>
+            <button class="btn-sm btn-secondary">Rename</button>
+            <span class="muted small"><%= s.employees %> employee(s)</span>
+          </form>
+          <% if (s.employees === 0) { %>
+            <form class="inline" method="post" action="/settings/sub-departments/<%= s.id %>/delete" data-confirm="Delete <%= s.name %>?">
+              <button class="btn-sm btn-danger">Delete</button>
+            </form>
+          <% } %>
+        </div>
+      <% } %>
+      <form class="inline-form" method="post" action="/settings/departments/<%= d.id %>/subs">
+        <div class="field"><input name="name" placeholder="New sub-department" required></div>
+        <button class="btn-sm">Add sub-department</button>
+      </form>
+    </div>
+  </div>
+<% } %>
+<% if (departments.length === 0) { %><p class="muted">No departments yet.</p><% } %>
+<%- include('../partials/footer') %>

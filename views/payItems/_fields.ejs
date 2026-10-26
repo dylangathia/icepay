@@ -1,0 +1,28 @@
+<div class="form-grid">
+  <div class="field"><label>Code *</label><input name="code" value="<%= item.code || '' %>" required placeholder="<%= kind === 'BENEFIT' ? 'HOUSE' : 'SACCO' %>"></div>
+  <div class="field"><label>Name *</label><input name="name" value="<%= item.name || '' %>" required placeholder="<%= kind === 'BENEFIT' ? 'House allowance' : 'SACCO contribution' %>"></div>
+  <div class="field"><label>Calculation</label>
+    <select name="calc_type">
+      <option value="FIXED" <%= item.calc_type === 'FIXED' ? 'selected' : '' %>>Fixed amount (KES)</option>
+      <option value="PERCENT" <%= item.calc_type === 'PERCENT' ? 'selected' : '' %>>Percentage of basic salary</option>
+    </select>
+  </div>
+  <div class="field"><label>Default amount / %</label><input type="number" step="0.01" min="0" name="default_value" value="<%= item.default_value ?? 0 %>"></div>
+  <div class="field"><label>Tax treatment</label>
+    <select name="taxable">
+      <% if (kind === 'BENEFIT') { %>
+        <option value="1" <%= item.taxable ? 'selected' : '' %>>Taxable – added to taxable pay</option>
+        <option value="0" <%= !item.taxable ? 'selected' : '' %>>Tax exempt – not taxed</option>
+      <% } else { %>
+        <option value="1" <%= item.taxable ? 'selected' : '' %>>Taxable – deducted after PAYE (e.g. loan, SACCO)</option>
+        <option value="0" <%= !item.taxable ? 'selected' : '' %>>Tax exempt – reduces taxable pay (e.g. pension)</option>
+      <% } %>
+    </select>
+  </div>
+  <div class="field"><label>&nbsp;</label>
+    <label class="check"><input type="checkbox" name="active" value="1" <%= item.active ? 'checked' : '' %>> Active</label>
+    <% if (kind === 'DEDUCTION') { %>
+      <label class="check"><input type="checkbox" name="insurance_relief" value="1" <%= item.insurance_relief ? 'checked' : '' %>> Insurance premium (qualifies for insurance relief)</label>
+    <% } %>
+  </div>
+</div>

@@ -1,0 +1,56 @@
+<%- include('partials/header') %>
+<div class="page-head">
+  <div><h1>Dashboard</h1><div class="muted">Payroll overview</div></div>
+  <div class="actions">
+    <% if (can('employees.manage')) { %><a class="btn" href="/employees/new">Add employee</a><% } %>
+    <a class="btn btn-secondary" href="/payroll">Go to payroll</a>
+  </div>
+</div>
+
+<div class="grid grid-4" style="margin-bottom:20px">
+  <div class="stat"><div class="label">Active employees</div><div class="value"><%= counts.active || 0 %></div></div>
+  <div class="stat"><div class="label">Suspended</div><div class="value"><%= counts.suspended || 0 %></div></div>
+  <div class="stat"><div class="label">Terminated</div><div class="value"><%= counts.terminated || 0 %></div></div>
+  <div class="stat">
+    <div class="label">Current period</div>
+    <div class="value" style="font-size:16px">
+      <% if (current) { %>
+        <a href="/payroll/<%= current.id %>"><%= periodName(current) %></a> <span class="badge badge-<%= current.status %>"><%= current.status %></span>
+      <% } else if (can('periods.manage')) { %>
+        <a href="/settings/periods">Open a period</a>
+      <% } else { %>
+        <span class="muted">None open</span>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-2">
+  <div class="card">
+    <h2>Last posted payroll</h2>
+    <% if (lastPosted) { %>
+      <dl class="details">
+        <dt>Period</dt><dd><a href="/payroll/<%= lastPosted.id %>"><%= periodName(lastPosted) %></a></dd>
+        <dt>Employees paid</dt><dd><%= lastPosted.employees %></dd>
+        <dt>Gross pay</dt><dd>KES <%= money(lastPosted.gross) %></dd>
+        <dt>PAYE</dt><dd>KES <%= money(lastPosted.paye) %></dd>
+        <dt>Net pay</dt><dd>KES <%= money(lastPosted.net) %></dd>
+        <dt>Posted</dt><dd><%= lastPosted.posted_at %> by <%= lastPosted.posted_by %></dd>
+      </dl>
+    <% } else { %>
+      <p class="muted">No payroll has been posted yet.</p>
+    <% } %>
+  </div>
+  <div class="card">
+    <h2>Recent activity</h2>
+    <% if (activity.length === 0) { %><p class="muted">No activity yet.</p><% } %>
+    <% for (const a of activity) { %>
+      <div style="padding:4px 0;border-bottom:1px solid var(--border)">
+        <strong><%= a.action.replace(/_/g, ' ').toLowerCase() %></strong>
+        <%= a.details || '' %>
+        <div class="muted small"><%= a.at %> · <%= a.username || 'system' %></div>
+      </div>
+    <% } %>
+  </div>
+</div>
+<%- include('partials/footer') %>

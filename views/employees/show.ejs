@@ -1,0 +1,158 @@
+<%- include('../partials/header') %>
+<% const e = employee; const today = new Date().toISOString().slice(0, 10); %>
+<div class="page-head">
+  <div>
+    <h1><%= e.first_name %> <%= e.middle_name || '' %> <%= e.last_name %> <span class="badge badge-<%= e.status %>"><%= e.status %></span></h1>
+    <div class="muted"><%= e.emp_no %> · <%= e.designation || 'No designation' %> · <%= e.department || 'No department' %><%= e.sub_department ? ` / ${e.sub_department}` : '' %></div>
+  </div>
+  <% const manage = can('employees.manage'); %>
+  <div class="actions">
+    <% if (manage && e.status !== 'TERMINATED') { %><a class="btn" href="/employees/<%= e.id %>/edit">Edit</a><% } %>
+    <% if (manage && e.status === 'SUSPENDED') { %>
+      <form class="inline" method="post" action="/employees/<%= e.id %>/reactivate" data-confirm="Reactivate this employee?">
+        <button class="btn-secondary">Reactivate</button>
+      </form>
+    <% } %>
+  </div>
+</div>
+
+<% if (e.status !== 'ACTIVE') { %>
+  <div class="notice">
+    <% if (e.status === 'SUSPENDED') { %>
+      Suspended on <%= e.status_date %>: <%= e.status_reason %>. This employee is excluded from payroll processing.
+    <% } else { %>
+      Terminated with last working day <%= e.status_date %>: <%= e.status_reason %>.
+      Their final payslip is prorated to that date in the month it falls in.
+    <% } %>
+  </div>
+<% } %>
+
+<div class="grid grid-2">
+  <div class="card">
+    <h2>Details</h2>
+    <dl class="details">
+      <dt>National ID</dt><dd><%= e.id_number || '—' %></dd>
+      <dt>KRA PIN</dt><dd><%= e.kra_pin || '—' %></dd>
+      <dt>NSSF no.</dt><dd><%= e.nssf_no || '—' %></dd>
+      <dt>SHIF no.</dt><dd><%= e.shif_no || '—' %></dd>
+      <dt>Gender</dt><dd><%= e.gender || '—' %></dd>
+      <dt>Date of birth</dt><dd><%= e.date_of_birth || '—' %></dd>
+      <dt>Email</dt><dd><%= e.email || '—' %></dd>
+      <dt>Phone</dt><dd><%= e.phone || '—' %></dd>
+    </dl>
+  </div>
+  <div class="card">
+    <h2>Employment &amp; payment</h2>
+    <dl class="details">
+      <dt>Hire date</dt><dd><%= e.hire_date %></dd>
+      <dt>Basic salary</dt><dd>KES <%= money(e.basic_salary) %></dd>
+      <dt>Private insurance</dt><dd><%= e.insurance_premium ? `KES ${money(e.insurance_premium)} / month` : '—' %></dd>
+      <dt>Payment mode</dt><dd><%= e.payment_mode %></dd>
+      <dt>Bank</dt><dd><%= [e.bank_name, e.bank_branch].filter(Boolean).join(', ') || '—' %></dd>
+      <dt>Account no.</dt><dd><%= e.account_no || '—' %></dd>
+    </dl>
+  </div>
+</div>
+
+<div class="card" id="pay-items">
+  <h2>Benefits &amp; deductions</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Type</th><th>Code</th><th>Name</th><th>Basis</th><th>Tax treatment</th><th>Value</th><th></th></tr></thead>
+      <tbody>
+        <% for (const i of items) { %>
+          <tr>
+            <td><%= i.kind === 'BENEFIT' ? 'Benefit' : 'Deduction' %><%= i.active ? '' : ' (inactive)' %></td>
+            <td><%= i.code %></td>
+            <td><%= i.name %></td>
+            <td><%= i.calc_type === 'PERCENT' ? '% of basic' : 'Fixed' %></td>
+            <td>
+              <% if (i.kind === 'BENEFIT') { %><%= i.taxable ? 'Taxable' : 'Tax exempt' %>
+              <% } else { %><%= i.taxable ? 'After tax' : 'Tax exempt (pre-tax)' %><%= i.insurance_relief ? ' · insurance relief' : '' %><% } %>
+            </td>
+            <td>
+              <% if (manage) { %>
+                <form class="inline-form" method="post" action="/employees/<%= e.id %>/items/<%= i.id %>">
+                  <input type="number" step="0.01" min="0" name="value" value="<%= i.value %>" style="width:120px">
+                  <span class="muted"><%= i.calc_type === 'PERCENT' ? '%' : 'KES' %></span>
+                  <button class="btn-sm btn-secondary">Save</button>
+                </form>
+              <% } else { %>
+                <%= i.calc_type === 'PERCENT' ? `${i.value}%` : `KES ${money(i.value)}` %>
+              <% } %>
+            </td>
+            <td class="right">
+              <% if (manage) { %>
+                <form class="inline" method="post" action="/employees/<%= e.id %>/items/<%= i.id %>/delete" data-confirm="Remove <%= i.name %> from this employee?">
+                  <button class="btn-sm btn-danger">Remove</button>
+                </form>
+              <% } %>
+            </td>
+          </tr>
+        <% } %>
+        <% if (items.length === 0) { %><tr><td colspan="7" class="muted">No benefits or deductions assigned.</td></tr><% } %>
+      </tbody>
+    </table>
+  </div>
+  <% if (manage && e.status !== 'TERMINATED') { %>
+    <form class="inline-form" method="post" action="/employees/<%= e.id %>/items">
+      <div class="field"><label>Add benefit or deduction</label>
+        <select name="pay_item_id" required>
+          <option value=""></option>
+          <% for (const kind of ['BENEFIT', 'DEDUCTION']) { %>
+            <optgroup label="<%= kind === 'BENEFIT' ? 'Benefits' : 'Deductions' %>">
+              <% for (const a of available.filter((x) => x.kind === kind)) { %>
+                <option value="<%= a.id %>"><%= a.code %> – <%= a.name %> (<%= a.calc_type === 'PERCENT' ? `${a.default_value}%` : `KES ${money(a.default_value)}` %>)</option>
+              <% } %>
+            </optgroup>
+          <% } %>
+        </select>
+      </div>
+      <div class="field"><label>Value (blank = default)</label><input type="number" step="0.01" min="0" name="value" style="width:140px"></div>
+      <button>Assign</button>
+    </form>
+  <% } %>
+</div>
+
+<div class="card">
+  <h2>Payslip history</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Period</th><th>Status</th><th class="num">Gross</th><th class="num">PAYE</th><th class="num">Net</th><th></th></tr></thead>
+      <tbody>
+        <% for (const p of payslips) { %>
+          <tr>
+            <td><%= periodName(p) %></td>
+            <td><span class="badge badge-<%= p.status %>"><%= p.status %></span></td>
+            <td class="num"><%= money(p.gross_pay) %></td>
+            <td class="num"><%= money(p.paye) %></td>
+            <td class="num"><%= money(p.net_pay) %></td>
+            <td class="right"><a href="/payroll/<%= p.period_id %>/payslips/<%= p.id %>" target="_blank">Payslip</a></td>
+          </tr>
+        <% } %>
+        <% if (payslips.length === 0) { %><tr><td colspan="6" class="muted">No payslips yet.</td></tr><% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<% if (manage && e.status !== 'TERMINATED') { %>
+  <div class="grid grid-2">
+    <% if (e.status === 'ACTIVE') { %>
+      <form class="card" method="post" action="/employees/<%= e.id %>/suspend" data-confirm="Suspend this employee? They will be excluded from payroll until reactivated.">
+        <h2>Suspend employee</h2>
+        <div class="field"><label>Effective date</label><input type="date" name="date" value="<%= today %>"></div>
+        <div class="field"><label>Reason *</label><input name="reason" required></div>
+        <button class="btn-warning">Suspend</button>
+      </form>
+    <% } %>
+    <form class="card" method="post" action="/employees/<%= e.id %>/terminate" data-confirm="Terminate this employee? This cannot be undone.">
+      <h2>Terminate employee</h2>
+      <div class="field"><label>Last working day</label><input type="date" name="date" value="<%= today %>"></div>
+      <p class="muted small">Their final payslip covers days up to this date. Remaining benefits and deductions (e.g. loan balances) should be settled separately.</p>
+      <div class="field"><label>Reason *</label><input name="reason" required></div>
+      <button class="btn-danger">Terminate</button>
+    </form>
+  </div>
+<% } %>
+<%- include('../partials/footer') %>

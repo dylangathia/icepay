@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Payslip <%= slip.emp_no %> – <%= periodName(period) %></title>
+<style>
+  body { font: 13px/1.45 Arial, Helvetica, sans-serif; color: #1d2433; background: #f4f6f9; margin: 0; padding: 24px; }
+  .slip { max-width: 720px; margin: 0 auto; background: #fff; border: 1px solid #e1e5ec; padding: 28px; }
+  .head { display: flex; justify-content: space-between; border-bottom: 2px solid #0b6bcb; padding-bottom: 12px; margin-bottom: 16px; }
+  h1 { font-size: 18px; margin: 0; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: #0b6bcb; margin: 18px 0 6px; }
+  table { width: 100%; border-collapse: collapse; }
+  td { padding: 4px 0; border-bottom: 1px solid #f0f2f5; }
+  td.amt { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tr.total td { font-weight: bold; border-top: 1px solid #1d2433; border-bottom: 0; }
+  .info td { border: 0; padding: 2px 0; }
+  .muted { color: #6b7385; }
+  .net { margin-top: 18px; padding: 12px; background: #e3effc; display: flex; justify-content: space-between; font-size: 16px; font-weight: bold; }
+  .print { text-align: center; margin: 16px; }
+  @media print { body { background: #fff; padding: 0; } .slip { border: 0; } .print { display: none; } }
+</style>
+</head>
+<body>
+<% const lines = (cat) => slip.lines.filter((l) => l.category === cat); %>
+<div class="slip">
+  <div class="head">
+    <div>
+      <h1><%= companyInfo.name %></h1>
+      <div class="muted"><%= [companyInfo.address, companyInfo.phone, companyInfo.email].filter(Boolean).join(' · ') %></div>
+      <% if (companyInfo.kra_pin) { %><div class="muted">KRA PIN: <%= companyInfo.kra_pin %></div><% } %>
+    </div>
+    <div style="text-align:right">
+      <h1>PAYSLIP</h1>
+      <div><%= periodName(period) %></div>
+      <% if (period.status !== 'POSTED') { %><div style="color:#b26a00;font-weight:bold">DRAFT – NOT POSTED</div><% } %>
+    </div>
+  </div>
+
+  <table class="info">
+    <tr><td class="muted">Employee</td><td><strong><%= slip.employee_name %></strong> (<%= slip.emp_no %>)</td>
+        <td class="muted">KRA PIN</td><td><%= slip.kra_pin || '—' %></td></tr>
+    <tr><td class="muted">Designation</td><td><%= slip.designation || '—' %></td>
+        <td class="muted">NSSF no.</td><td><%= slip.nssf_no || '—' %></td></tr>
+    <tr><td class="muted">Department</td><td><%= slip.department || '—' %></td>
+        <td class="muted">SHIF no.</td><td><%= slip.shif_no || '—' %></td></tr>
+    <% if (slip.days_worked != null && slip.days_worked < slip.days_in_period) { %>
+      <tr><td class="muted">Days paid</td><td colspan="3"><%= slip.days_worked %> of <%= slip.days_in_period %>
+        (monthly basic KES <%= money(slip.monthly_basic) %>)</td></tr>
+    <% } %>
+    <tr><td class="muted">Payment</td><td colspan="3"><%= slip.payment_mode %><%= slip.account_no ? ` · ${slip.bank_name || ''} ${slip.account_no}` : '' %></td></tr>
+  </table>
+
+  <h2>Earnings</h2>
+  <table>
+    <% for (const l of lines('EARNING')) { %>
+      <tr><td><%= l.name %><%= l.taxable ? '' : ' (non-taxable)' %></td><td class="amt"><%= money(l.amount) %></td></tr>
+    <% } %>
+    <tr class="total"><td>Gross pay</td><td class="amt"><%= money(slip.gross_pay) %></td></tr>
+  </table>
+
+  <h2>Tax computation</h2>
+  <table>
+    <tr><td>Taxable pay</td><td class="amt"><%= money(slip.taxable_pay) %></td></tr>
+    <tr><td>Tax charged</td><td class="amt"><%= money(slip.tax_charged) %></td></tr>
+    <tr><td>Less personal relief</td><td class="amt">(<%= money(slip.personal_relief) %>)</td></tr>
+    <% if (slip.insurance_relief) { %>
+      <tr><td>Less insurance relief</td><td class="amt">(<%= money(slip.insurance_relief) %>)</td></tr>
+    <% } %>
+    <tr class="total"><td>PAYE</td><td class="amt"><%= money(slip.paye) %></td></tr>
+  </table>
+
+  <h2>Deductions</h2>
+  <table>
+    <% for (const l of [...lines('STATUTORY'), ...lines('DEDUCTION')]) { %>
+      <tr><td><%= l.name %><%= l.category === 'DEDUCTION' && !l.taxable ? ' (pre-tax)' : '' %></td><td class="amt"><%= money(l.amount) %></td></tr>
+    <% } %>
+    <tr class="total"><td>Total deductions</td><td class="amt"><%= money(slip.total_deductions) %></td></tr>
+  </table>
+
+  <div class="net"><span>NET PAY</span><span>KES <%= money(slip.net_pay) %></span></div>
+
+  <p class="muted" style="margin-top:16px">
+    Employer contributions: NSSF KES <%= money(slip.employer_nssf) %><% if (slip.employer_housing_levy) { %> · Housing Levy KES <%= money(slip.employer_housing_levy) %><% } %>
+  </p>
+</div>
+<% if (!locals.email) { %><div class="print"><button onclick="window.print()">Print / Save as PDF</button></div><% } %>
+</body>
+</html>

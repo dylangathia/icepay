@@ -1,0 +1,22 @@
+﻿{
+  "name": "icepay-web",
+  "version": "1.0.0",
+  "description": "IcePay - Kenyan payroll management (PAYE, SHIF, NSSF, Housing Levy)",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning src/server.js",
+    "dev": "node --disable-warning=ExperimentalWarning --watch src/server.js",
+    "test": "node --disable-warning=ExperimentalWarning --test"
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
+  "license": "UNLICENSED",
+  "private": true,
+  "dependencies": {
+    "ejs": "^7.0.2",
+    "express": "^4.22.3",
+    "express-session": "^1.19.0",
+    "nodemailer": "^10.2.1"
+  }
+}

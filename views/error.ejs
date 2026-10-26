@@ -1,0 +1,7 @@
+<% if (user) { %><%- include('partials/header') %><% } else { %><!doctype html><html><head><title><%= title %></title><link rel="stylesheet" href="/style.css"></head><body><main class="content"><% } %>
+<div class="card">
+  <h1><%= title %></h1>
+  <p><%= message %></p>
+  <a class="btn btn-secondary" href="/">Back to dashboard</a>
+</div>
+<% if (user) { %><%- include('partials/footer') %><% } else { %></main></body></html><% } %>

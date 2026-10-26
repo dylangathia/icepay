@@ -1,0 +1,17 @@
+<%- include('../partials/header') %>
+<% const c = companyInfo; %>
+<form class="card" method="post" action="/settings/company">
+  <h2>Company setup</h2>
+  <div class="form-grid">
+    <div class="field"><label>Company name *</label><input name="name" value="<%= c.name || '' %>" required></div>
+    <div class="field"><label>KRA PIN</label><input name="kra_pin" value="<%= c.kra_pin || '' %>"></div>
+    <div class="field"><label>NSSF employer number</label><input name="nssf_no" value="<%= c.nssf_no || '' %>"></div>
+    <div class="field"><label>SHIF / SHA employer number</label><input name="shif_no" value="<%= c.shif_no || '' %>"></div>
+    <div class="field"><label>Phone</label><input name="phone" value="<%= c.phone || '' %>"></div>
+    <div class="field"><label>Email</label><input type="email" name="email" value="<%= c.email || '' %>"></div>
+    <div class="field"><label>Website</label><input name="website" value="<%= c.website || '' %>"></div>
+  </div>
+  <div class="field"><label>Postal / physical address</label><textarea name="address" rows="2"><%= c.address || '' %></textarea></div>
+  <button>Save</button>
+</form>
+<%- include('../partials/footer') %>

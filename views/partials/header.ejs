@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= title %> · IcePay</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <a class="brand" href="/">Ice<span>Pay</span></a>
+    <div class="brand-sub"><%= company ? company.name : '' %></div>
+    <nav>
+      <% const settingsTabs = [
+        ['/settings/company', 'Company', 'settings.manage'], ['/settings/statutory', 'Tax & statutory', 'settings.manage'],
+        ['/settings/periods', 'Payroll periods', 'periods.manage'], ['/settings/departments', 'Departments', 'settings.manage'],
+        ['/settings/designations', 'Designations', 'settings.manage'], ['/settings/mail', 'Mail server', 'settings.manage'],
+        ['/settings/users', 'Users', 'users.manage'], ['/settings/audit', 'Audit log', 'audit.view'],
+      ].filter(([, , permission]) => can(permission));
+      const nav = [
+        ['/', 'Dashboard'], ['/employees', 'Employees'], ['/benefits', 'Benefits'],
+        ['/deductions', 'Deductions'], ['/payroll', 'Payroll'],
+        ...(settingsTabs.length ? [['/settings', 'Settings']] : []),
+      ];
+      for (const [href, label] of nav) {
+        const active = href === '/' ? path === '/' : path.startsWith(href); %>
+        <a href="<%= href %>" class="<%= active ? 'active' : '' %>"><%= label %></a>
+      <% } %>
+    </nav>
+    <div class="sidebar-foot">
+      <div><%= user.full_name || user.username %></div>
+      <div class="muted small"><%= ROLES[user.role] %></div>
+      <a href="/account/password">Change password</a>
+      <form method="post" action="/logout"><button class="link">Sign out</button></form>
+    </div>
+  </aside>
+  <main class="content">
+    <% if (path.startsWith('/settings')) { %>
+      <nav class="tabs">
+        <% for (const [href, label] of settingsTabs) { %>
+          <a href="<%= href %>" class="<%= path.startsWith(href) ? 'active' : '' %>"><%= label %></a>
+        <% } %>
+      </nav>
+    <% } %>
+    <% if (flash) { %>
+      <div class="flash flash-<%= flash.type %>"><%= flash.message %></div>
+    <% } %>

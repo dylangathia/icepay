@@ -1,0 +1,11 @@
+  </main>
+</div>
+<script>
+  // Confirm destructive actions: <form data-confirm="message">
+  document.addEventListener('submit', (e) => {
+    const msg = e.target.dataset.confirm;
+    if (msg && !confirm(msg)) e.preventDefault();
+  });
+</script>
+</body>
+</html>

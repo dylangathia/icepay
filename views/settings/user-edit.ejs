@@ -1,0 +1,37 @@
+<%- include('../partials/header') %>
+<% const self = account.id === user.id; %>
+<div class="page-head"><h1>User: <%= account.username %></h1></div>
+<div class="grid grid-2">
+  <form class="card" method="post" action="/settings/users/<%= account.id %>">
+    <h2>Details</h2>
+    <div class="field"><label>Full name</label><input name="full_name" value="<%= account.full_name || '' %>"></div>
+    <div class="field"><label>Email</label><input type="email" name="email" value="<%= account.email || '' %>"></div>
+    <div class="field"><label>Role</label>
+      <% if (self) { %><input type="hidden" name="role" value="<%= account.role %>"><% } %>
+      <select name="role" <%= self ? 'disabled' : '' %>>
+        <% for (const [value, label] of Object.entries(ROLES)) { %>
+          <option value="<%= value %>" <%= account.role === value ? 'selected' : '' %>><%= label %></option>
+        <% } %>
+      </select>
+    </div>
+    <div class="field">
+      <% if (self) { %><input type="hidden" name="active" value="1"><% } %>
+      <label class="check"><input type="checkbox" name="active" value="1" <%= account.active ? 'checked' : '' %> <%= self ? 'disabled' : '' %>> Active (can sign in)</label>
+    </div>
+    <% if (self) { %><p class="muted small">You cannot change your own role or deactivate yourself.</p><% } %>
+    <div class="actions">
+      <button>Save</button>
+      <a class="btn btn-secondary" href="/settings/users">Cancel</a>
+    </div>
+  </form>
+
+  <% if (!self) { %>
+    <form class="card" method="post" action="/settings/users/<%= account.id %>/reset-password" data-confirm="Reset the password for <%= account.username %>?">
+      <h2>Reset password</h2>
+      <div class="field"><label>New temporary password</label><input type="password" name="password" minlength="8" required autocomplete="new-password"></div>
+      <p class="muted small">The user must change it at their next sign-in.</p>
+      <button class="btn-warning">Reset password</button>
+    </form>
+  <% } %>
+</div>
+<%- include('../partials/footer') %>

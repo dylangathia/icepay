@@ -1,0 +1,97 @@
+<%- include('../partials/header') %>
+<% if (processed.length) { %>
+  <div class="notice">
+    <%= processed.map(periodName).join(', ') %> <%= processed.length === 1 ? 'is' : 'are' %> processed but not posted.
+    Changes here only apply after you roll back and reprocess.
+  </div>
+<% } %>
+
+<form class="card" method="post" action="/settings/statutory/bands">
+  <h2>PAYE tax bands (monthly)</h2>
+  <p class="muted small">Bands must start at 0 and be continuous. Leave the upper limit of the last band blank.</p>
+  <div class="table-wrap">
+    <table id="bands">
+      <thead><tr><th>From (KES)</th><th>To (KES)</th><th>Rate (%)</th><th></th></tr></thead>
+      <tbody>
+        <% for (const b of bands) { %>
+          <tr>
+            <td><input type="number" step="0.01" name="lower" value="<%= b.lower_limit %>"></td>
+            <td><input type="number" step="0.01" name="upper" value="<%= b.upper_limit ?? '' %>" placeholder="and above"></td>
+            <td><input type="number" step="0.01" name="rate" value="<%= b.rate %>"></td>
+            <td><button type="button" class="btn-sm btn-secondary" onclick="this.closest('tr').remove()">Remove</button></td>
+          </tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+  <div class="actions">
+    <button type="button" class="btn-secondary" id="add-band">Add band</button>
+    <button>Save PAYE bands</button>
+  </div>
+</form>
+
+<form class="card" method="post" action="/settings/statutory">
+  <h2>Reliefs</h2>
+  <div class="form-grid">
+    <div class="field"><label>Personal relief (KES / month)</label><input type="number" step="0.01" name="personal_relief" value="<%= s.personal_relief %>"></div>
+    <div class="field"><label>Pension contribution cap (KES / month)</label><input type="number" step="0.01" name="pension_relief_cap" value="<%= s.pension_relief_cap %>"></div>
+  </div>
+  <p class="muted small">The cap limits how much NSSF plus tax-exempt deductions can reduce taxable pay.</p>
+  <div class="form-grid">
+    <div class="field"><label>Insurance relief (% of premiums)</label><input type="number" step="0.01" name="insurance_relief_rate" value="<%= s.insurance_relief_rate %>"></div>
+    <div class="field"><label>Insurance relief cap (KES / month)</label><input type="number" step="0.01" name="insurance_relief_cap" value="<%= s.insurance_relief_cap %>"></div>
+  </div>
+  <p class="muted small">
+    Insurance relief applies to deductions flagged as insurance premiums plus any premiums recorded on the employee's profile.
+  </p>
+
+  <h2 style="margin-top:20px">SHIF – Social Health Insurance Fund</h2>
+  <div class="form-grid">
+    <div class="field"><label>Rate (% of gross pay)</label><input type="number" step="0.01" name="shif_rate" value="<%= s.shif_rate %>"></div>
+    <div class="field"><label>Minimum contribution (KES)</label><input type="number" step="0.01" name="shif_minimum" value="<%= s.shif_minimum %>"></div>
+    <div class="field"><label>&nbsp;</label><label class="check"><input type="checkbox" name="shif_tax_deductible" value="1" <%= s.shif_tax_deductible ? 'checked' : '' %>> Deductible from taxable pay</label></div>
+  </div>
+
+  <h2 style="margin-top:20px">NSSF</h2>
+  <div class="form-grid">
+    <div class="field"><label>Rate (% each, employee &amp; employer)</label><input type="number" step="0.01" name="nssf_rate" value="<%= s.nssf_rate %>"></div>
+    <div class="field"><label>Lower earnings limit – Tier I (KES)</label><input type="number" step="0.01" name="nssf_lower_limit" value="<%= s.nssf_lower_limit %>"></div>
+    <div class="field"><label>Upper earnings limit – Tier II (KES)</label><input type="number" step="0.01" name="nssf_upper_limit" value="<%= s.nssf_upper_limit %>"></div>
+  </div>
+  <p class="muted small">
+    Current maximum employee contribution: KES <%= money(s.nssf_upper_limit * s.nssf_rate / 100) %>
+    (Tier I KES <%= money(s.nssf_lower_limit * s.nssf_rate / 100) %> + Tier II KES <%= money((s.nssf_upper_limit - s.nssf_lower_limit) * s.nssf_rate / 100) %>).
+  </p>
+
+  <h2 style="margin-top:20px">Affordable Housing Levy</h2>
+  <div class="form-grid">
+    <div class="field"><label>&nbsp;</label><label class="check"><input type="checkbox" name="housing_levy_enabled" value="1" <%= s.housing_levy_enabled ? 'checked' : '' %>> Deduct Housing Levy</label></div>
+    <div class="field"><label>Rate (% of gross, each side)</label><input type="number" step="0.01" name="housing_levy_rate" value="<%= s.housing_levy_rate %>"></div>
+    <div class="field"><label>&nbsp;</label><label class="check"><input type="checkbox" name="housing_levy_tax_deductible" value="1" <%= s.housing_levy_tax_deductible ? 'checked' : '' %>> Deductible from taxable pay</label></div>
+  </div>
+
+  <h2 style="margin-top:20px">Payroll rules</h2>
+  <div class="field">
+    <label class="check"><input type="checkbox" name="proration_enabled" value="1" <%= s.proration_enabled ? 'checked' : '' %>>
+      Prorate pay for employees who join or leave mid-month (by calendar days)</label>
+  </div>
+  <div class="field">
+    <label class="check"><input type="checkbox" name="post_requires_different_user" value="1" <%= s.post_requires_different_user ? 'checked' : '' %>>
+      Require a different user to post payroll than the one who processed it</label>
+  </div>
+  <button>Save</button>
+</form>
+
+<script>
+  document.getElementById('add-band').addEventListener('click', () => {
+    const tbody = document.querySelector('#bands tbody');
+    const last = tbody.querySelector('tr:last-child input[name=upper]');
+    const row = document.createElement('tr');
+    row.innerHTML = `<td><input type="number" step="0.01" name="lower" value="${last ? last.value : 0}"></td>
+      <td><input type="number" step="0.01" name="upper" placeholder="and above"></td>
+      <td><input type="number" step="0.01" name="rate"></td>
+      <td><button type="button" class="btn-sm btn-secondary" onclick="this.closest('tr').remove()">Remove</button></td>`;
+    tbody.appendChild(row);
+  });
+</script>
+<%- include('../partials/footer') %>
